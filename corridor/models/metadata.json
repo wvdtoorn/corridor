@@ -1,0 +1,15 @@
+{
+  "models": [
+    {
+      "name": "rna004_130bps_sup@v5.1.0",
+      "filename": "rna004_130bps_sup@v5.1.0_v1.0.0.pkl", 
+      "version": "1.0.0",
+      "description": "GLM with Log link function for mu and sigma (degree 1) trained on RNA004 130bps Sup@v5.1.0 data",
+      "dorado_model": "rna004_130bps_sup@v5.1.0",
+      "dorado_version": "v0.8.2",
+      "training_date": "2025-09-06",
+      "length_range": [15, 93],
+      "recommended": true
+    }
+  ]
+}

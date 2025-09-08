@@ -1,0 +1,11 @@
+name: corridor
+channels:
+  - https://repo.anaconda.com/pkgs/main
+dependencies:
+  - scipy
+  - matplotlib
+  - pandas
+  - numpy
+  - statsmodels
+  - pysam
+  - scikit-learn
