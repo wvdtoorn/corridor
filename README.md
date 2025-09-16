@@ -5,13 +5,30 @@ We provide a pre-trained model for the `dorado` basecalling model `rna004_130bps
 
 ## Installation
 
-Currently, `corridor` is not a package, but a collection of scripts.
-
-Install and activate the conda environment:
+Best use a separate Python virtual environment, which can be created
+and activated like this:
 
 ```bash
-conda env create -f environment.yml
-conda activate corridor
+my_venv_path=~/.virtualenvs/corridor  # Choose as you wish
+mkdir -p "$my_venv_path"
+python -m venv "$my_venv_path"
+
+. "$my_venv_path/bin/activate"
+```
+
+Now you can install the software in the virtual environment run:
+
+```bash
+git clone https://github.com/wvdtoorn/corridor.git
+cd corridor
+pip install .
+```
+
+After that the repository is not need anymore. For a development
+setup do an _editable_ installation instead and keep the repository:
+
+```bash
+pip install -e .
 ```
 
 
@@ -24,7 +41,7 @@ Basecall your data with `dorado` (model `rna004_130bps_sup@v5.1.0`) with the `--
 **1. Parse BAM file**
 
 ```bash
-python corridor/parse_bam_polya.py path/to/bam/file -o path/to/dorado_polya.csv
+parse_bam_polya path/to/bam/file -o path/to/dorado_polya.csv
 ```
 
 **1.b (Optional) Update the sample name in the output CSV.**
@@ -34,7 +51,7 @@ If your BAM file has multiple samples, you should update the `sample_id` column 
 **2. Fit binned lognormal model**
 
 ```bash
-python corridor/fit_binned_lognormal.py -i path/to/dorado_polya.csv -o path/to/fit_binned_lognormal.csv
+fit_binned_lognormal -i path/to/dorado_polya.csv -o path/to/fit_binned_lognormal.csv
 ```
 
 This creates a figure per sample in the `path/to` directory as well as a CSV file with the results. You should check the figure(s) to determine the minimal reasonable fit, i.e. the left most plot that matches the majority of the data while ignoring low and high value noise. We currently do not support predictions per mode, for multi-modal polya tail length distributions.
@@ -56,13 +73,13 @@ An example of such a CSV file for the included dataset is provided in `test/asse
 Then, run the following command:
 
 ```bash
-python corridor/create_best_fit_csv.py --all path/to/fit_binned_lognormal.csv --best path/to/best_fit_idx.csv --output path/to/best_fit.csv
+create_best_fit_csv --all path/to/fit_binned_lognormal.csv --best path/to/best_fit_idx.csv --output path/to/best_fit.csv
 ```
 
 **4. Predict true length with 95% CI**
 
 ```bash
-python corridor/predict.py -m corridor/models/rna004_130bps_sup@v5.1.0_v1.0.0.pkl -i path/to/best_fit.csv -o path/to/predictions.csv
+predict -i path/to/best_fit.csv -o path/to/predictions.csv
 ```
 
 The output CSV will have the following structure:

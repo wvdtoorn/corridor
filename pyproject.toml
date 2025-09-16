@@ -18,6 +18,7 @@ dependencies = [
   "statsmodels",
   "pysam",
   "scikit-learn",
+  "click"
 ]
 
 [project.scripts]
