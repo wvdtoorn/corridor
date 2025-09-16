@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools >= 77.0.3", "setuptools-scm"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "corridor"
+requires-python = ">= 3.11"
+version = "0.1"
+authors = [
+    {name = "Wiep van der Toorn", email = "wt@biotx.ai"},
+]
+readme = {file = "README.md", content-type = "text/markdown"}
+dependencies = [
+  "scipy",
+  "matplotlib",
+  "pandas",
+  "numpy",
+  "statsmodels",
+  "pysam",
+  "scikit-learn",
+]
+
+[project.scripts]
+create_best_fit_csv = "corridor.create_best_fit_csv:main"
+fit_binned_lognormal = "corridor.fit_binned_lognormal:main"
+parse_bam_polya = "corridor.parse_bam_polya:main"
+predict = "corridor.predict:main"
+
+[project.urls]
+Repository = "https://github.com/wvdtoorn/corridor"
+
+[tool.setuptools.packages.find]
+where = ["src"]
