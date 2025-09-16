@@ -2,7 +2,8 @@
 """
 predict.py
 
-Load a saved model artifact (pickle) and predict true_length with 95% CI for rows in an input CSV.
+Load a saved model artifact (pickle) and predict true_length with 95% CI for
+rows in an input CSV.
 
 Input CSV must contain columns: id, mu, sigma
 
@@ -12,7 +13,7 @@ Output CSV contains columns: id, predicted_length, ci_lo, ci_hi
 import argparse
 import pickle
 from pathlib import Path
-from typing import List, Tuple, Optional
+from typing import List, Optional, Tuple
 
 import numpy as np
 import pandas as pd
@@ -26,7 +27,7 @@ def build_design(
     mu: np.ndarray, sigma: np.ndarray, degree: int = 1
 ) -> Tuple[np.ndarray, List[str]]:
     """
-    Create polynomial design (no intercept) matching sklearn.preprocessing.PolynomialFeatures(..., include_bias=False).
+    Create polynomial design (no intercept)
     Returns X (n x p) and feature_names list.
     """
     X = np.column_stack([mu, sigma])
@@ -59,10 +60,13 @@ def load_model_artifact(path: str) -> dict:
 
 
 def assemble_X_sm_for_params(
-    X_full: np.ndarray, feature_names: List[str], param_index: Optional[List[str]]
+    X_full: np.ndarray,
+    feature_names: List[str],
+    param_index: Optional[List[str]],
 ) -> np.ndarray:
     """
-    Build a design matrix X_sm whose column ordering matches param_index (list of parameter names).
+    Build a design matrix X_sm whose column ordering matches
+    param_index (list of parameter names).
     If param_index is None, return intercept + X_full (positional mapping).
     """
     n = X_full.shape[0]
@@ -76,19 +80,19 @@ def assemble_X_sm_for_params(
         else:
             if pname in feature_names:
                 idx = feature_names.index(pname)
-                cols.append(X_full[:, idx : idx + 1])
+                cols.append(X_full[:, idx: idx + 1])
             else:
                 # try positional fallback: x1,x2... mapping
                 if pname.startswith("x") and pname[1:].isdigit():
                     pos = int(pname[1:]) - 1
                     if 0 <= pos < X_full.shape[1]:
-                        cols.append(X_full[:, pos : pos + 1])
+                        cols.append(X_full[:, pos: pos + 1])
                         continue
                 # try mu/sigma when degree==1
                 if pname in ("mu", "sigma") and len(feature_names) >= 2:
                     try:
                         idx = feature_names.index(pname)
-                        cols.append(X_full[:, idx : idx + 1])
+                        cols.append(X_full[:, idx: idx + 1])
                         continue
                     except ValueError:
                         pass
@@ -103,7 +107,9 @@ def assemble_X_sm_for_params(
 # -------------------------
 # Prediction logic
 # -------------------------
-def predict_with_intervals(artifact: dict, df_in: pd.DataFrame) -> pd.DataFrame:
+def predict_with_intervals(
+    artifact: dict, df_in: pd.DataFrame
+) -> pd.DataFrame:
     """
     Input:
       artifact: dict from load_model_artifact()
@@ -116,7 +122,8 @@ def predict_with_intervals(artifact: dict, df_in: pd.DataFrame) -> pd.DataFrame:
 
     if fitted is None:
         raise ValueError(
-            "Artifact does not contain a fitted model/result object under 'fitted' key."
+            "Artifact does not contain a fitted model/result object under ",
+            "'fitted' key.",
         )
 
     mu = df_in["mu"].to_numpy(dtype=float)
@@ -126,7 +133,10 @@ def predict_with_intervals(artifact: dict, df_in: pd.DataFrame) -> pd.DataFrame:
     if saved_feature_names:
         if len(saved_feature_names) != X_full.shape[1]:
             raise ValueError(
-                "Saved artifact.feature_names length does not match constructed design. Ensure artifact degree matches."
+                (
+                    "Saved artifact.feature_names length does not match ",
+                    "constructed design. Ensure artifact degree matches.",
+                )
             )
         feature_names = saved_feature_names
 
@@ -191,13 +201,19 @@ def predict_with_intervals(artifact: dict, df_in: pd.DataFrame) -> pd.DataFrame:
 # -------------------------
 def main():
     parser = argparse.ArgumentParser(
-        description="Predict true_length with 95% CI from saved model and input CSV (id,mu,sigma)."
+        description=(
+            "Predict true_length with 95% CI from saved model and "
+            "input CSV (id,mu,sigma)."
+        ),
     )
     parser.add_argument(
         "--model",
         "-m",
         required=True,
-        help="Path to pickled model artifact (dict or object or statsmodels result).",
+        help=(
+            "Path to pickled model artifact (dict or object or statsmodels ",
+            "result).",
+        ),
     )
     parser.add_argument(
         "--input",
@@ -206,7 +222,10 @@ def main():
         help="Path to input CSV with columns: id, mu, sigma",
     )
     parser.add_argument(
-        "--output", "-o", required=True, help="Path to output CSV to write predictions."
+        "--output",
+        "-o",
+        required=True,
+        help="Path to output CSV to write predictions.",
     )
     args = parser.parse_args()
 
@@ -215,7 +234,9 @@ def main():
     df = pd.read_csv(args.input)
     required = {"sample_id", "mu", "sigma"}
     if not required.issubset(df.columns):
-        raise ValueError(f"Input CSV must contain columns: {', '.join(required)}")
+        raise ValueError(
+            f"Input CSV must contain columns: {', '.join(required)}"
+        )
 
     out_df = predict_with_intervals(artifact, df)
     out_df.to_csv(args.output, index=False)

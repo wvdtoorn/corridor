@@ -11,19 +11,40 @@ Usage:
 """
 
 from __future__ import annotations
+
 import argparse
-import os
 import logging
+import os
 from dataclasses import dataclass
-from typing import Tuple, Dict, Any
-import matplotlib.pyplot as plt
+from typing import Any, Dict, Tuple
+
+import matplotlib
 import numpy as np
 import pandas as pd
 from scipy import stats
-from scipy.optimize import minimize
+
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 logger = logging.getLogger("binned_lognormal")
+
+INPUT_DTYPES = {
+    "read_id": str,
+    "reference": str,
+    "sample": str,
+    "tail_len": float,
+    "polya_len": int,
+    "template": str,
+    "polyA tail from SS of PCR": float,
+    "polyA tail from SS of IVT": float,
+    "A's at end": float,
+    "true_length": int,
+    "method": str,
+    "run": int,
+    "method_run": str,
+    "sample_id": int,
+}
 
 
 # -------------------------
@@ -47,7 +68,8 @@ class MixtureResults:
 # -------------------------
 def binned_lognormal_pmf(k: np.ndarray, mu: float, sigma: float) -> np.ndarray:
     """
-    Compute discrete PMF P(K = k) for integer k >= 1 using lognormal CDF differences:
+    Compute discrete PMF P(K = k) for integer k >= 1 using
+    lognormal CDF differences:
         P(k) = F(k + 0.5) - F(k - 0.5)
     For k == 1 we use left edge = 0.5 (works for positive integer data).
     Returns an array of probabilities (same shape as k).
@@ -68,7 +90,8 @@ def neg_log_likelihood_from_counts(
     params: np.ndarray, values: np.ndarray, counts: np.ndarray
 ) -> float:
     """
-    Negative log-likelihood for binned lognormal given unique integer values and counts.
+    Negative log-likelihood for binned lognormal given unique integer values
+    and counts.
     params: [mu, sigma] with sigma > 0.
     values: integer k array
     counts: counts for each k
@@ -114,7 +137,9 @@ def fit_binned_lognormal_to_sample(data: np.ndarray) -> Dict[str, Any]:
 def initialize_mixture_params(
     values: np.ndarray, counts: np.ndarray, n_components: int
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
-    """Initialize weights, mu, sigma for mixture using quantiles of log-values."""
+    """
+    Initialize weights, mu, sigma for mixture using quantiles of log-values.
+    """
     weights = np.full(n_components, 1.0 / n_components)
     log_vals = np.log(values)
     # choose initial mus as quantiles
@@ -125,7 +150,9 @@ def initialize_mixture_params(
         if np.sum(counts) > 1
         else 0.5
     )
-    sigma_init = np.full(n_components, max(0.3, sigma_global / np.sqrt(n_components)))
+    sigma_init = np.full(
+        n_components, max(0.3, sigma_global / np.sqrt(n_components))
+    )
     return weights, mu_init.astype(float), sigma_init.astype(float)
 
 
@@ -137,7 +164,8 @@ def fit_lognormal_mixture(
     tol: float = 1e-6,
 ) -> MixtureResults:
     """
-    Fit mixture of binned lognormals by EM on unique integer values with counts.
+    Fit mixture of binned lognormals by EM on unique integer values with
+    counts.
     Returns MixtureResults.
     """
     values = np.asarray(values, dtype=float)
@@ -162,7 +190,8 @@ def fit_lognormal_mixture(
         denom = np.maximum(denom, 1e-15)
         r = weighted / denom  # responsibilities for each unique value
 
-        # M-step: update weights, mu, sigma using counts as observation multiplicities
+        # M-step: update weights, mu, sigma using counts as
+        # observation multiplicities
         # Effective counts per component
         effective_counts = counts[:, np.newaxis] * r  # shape (m, k)
         Nk = effective_counts.sum(axis=0)  # size k
@@ -206,7 +235,8 @@ def fit_lognormal_mixture(
 
 def remove_outliers(values: np.ndarray, iqr_factor: float = 1.5) -> np.ndarray:
     """
-    Remove outliers from the array `values` using a threshold of `sigma_threshold`.
+    Remove outliers from the array `values` using a threshold of
+    `sigma_threshold`.
     """
     q1, q3 = np.percentile(values, [25, 75])
     iqr = q3 - q1
@@ -227,15 +257,16 @@ def process_group(
     outdir: str = None,
 ) -> Dict[str, Any]:
     """
-    Fit single-component, fit mixtures up to max_components, select best by BIC,
-    identify majority component and filter observations with posterior >= resp_threshold,
-    then refit single-component to filtered data if possible.
+    Fit single-component, fit mixtures up to max_components
 
     Returns a dict of results.
     """
-    base = fit_binned_lognormal_to_sample(remove_outliers(values, iqr_factor=1.5))
+    no_outliers = remove_outliers(np.asarray(values))
+    base = fit_binned_lognormal_to_sample(no_outliers)
 
-    vals_all, counts_all = np.unique(np.asarray(values).astype(int), return_counts=True)
+    vals_all, counts_all = np.unique(
+        np.asarray(no_outliers).astype(int), return_counts=True
+    )
     mixture_results = []
     for k in range(2, max_components + 1):
         mr = fit_lognormal_mixture(vals_all, counts_all, n_components=k)
@@ -250,38 +281,42 @@ def process_group(
             mr.mu_params[int(np.argmax(mr.weights))] for mr in mixture_results
         ]
         sigmas = [base["sigma"]] + [
-            mr.sigma_params[int(np.argmax(mr.weights))] for mr in mixture_results
+            mr.sigma_params[int(np.argmax(mr.weights))]
+            for mr in mixture_results
         ]
 
         fig_path = os.path.join(outdir, f"all_fits_{group_name}.png")
         n_plots = len(mixture_results) + 1
         plt.figure(figsize=(n_plots * 5, 5))
-        x = np.arange(min(vals_all), max(vals_all) + 1)
-        base_pdf = stats.lognorm.pdf(x, base["sigma"], loc=0, scale=np.exp(base["mu"]))
+        x = np.arange(min(no_outliers), max(no_outliers) + 1)
+        base_pdf = stats.lognorm.pdf(
+            x, base["sigma"], loc=0, scale=np.exp(base["mu"])
+        )
 
         plt.subplot(1, len(mixture_results) + 1, 1)
         plt.hist(
-            np.repeat(vals_all, counts_all.astype(int)),
-            bins=np.arange(vals_all.min(), vals_all.max() + 1),
+            no_outliers,
+            bins=np.arange(no_outliers.min(), no_outliers.max() + 1),
             density=True,
             alpha=0.5,
             label="Data",
         )
         plt.plot(
-            np.arange(vals_all.min(), vals_all.max() + 1),
+            np.arange(no_outliers.min(), no_outliers.max() + 1),
             base_pdf,
             "r-",
             linewidth=2,
             label="Base fit",
         )
+        plt.title(f"fit_idx=1")
         plt.legend()
         plt.grid(True, alpha=0.3)
 
         for i, (mr) in enumerate(mixture_results):
             plt.subplot(1, len(mixture_results) + 1, i + 2)
             plt.hist(
-                np.repeat(vals_all, counts_all.astype(int)),
-                bins=np.arange(vals_all.min(), vals_all.max() + 1),
+                no_outliers,
+                bins=np.arange(no_outliers.min(), no_outliers.max() + 1),
                 density=True,
                 alpha=0.5,
                 label="Data",
@@ -290,10 +325,12 @@ def process_group(
             mu = mr.mu_params[this_majority_idx]
             sigma = mr.sigma_params[this_majority_idx]
             pdf = stats.lognorm.pdf(x, sigma, loc=0, scale=np.exp(mu))
-            plt.plot(x, pdf, "r-", linewidth=2, label=f"Mixture fit (k={i + 1})")
+            plt.plot(
+                x, pdf, "r-", linewidth=2, label=f"Mixture fit (k={i + 1})"
+            )
             plt.legend()
             plt.grid(True, alpha=0.3)
-            plt.title(f"fit_idx={i + 1}")
+            plt.title(f"fit_idx={i + 2}")
 
         fig_mixtures = plt.gcf()
         fig_mixtures.suptitle(f"Sample: {group_name}")
@@ -323,9 +360,11 @@ def process_file(
     Read input CSV, group by id_col, perform mixture detection and filtering,
     write output CSV with results.
     """
-    df = pd.read_csv(in_path)
+    df = pd.read_csv(in_path, dtype=INPUT_DTYPES)
     if not {id_col, value_col}.issubset(df.columns):
-        raise ValueError(f"Input CSV must contain columns: {id_col}, {value_col}")
+        raise ValueError(
+            f"Input CSV must contain columns: {id_col}, {value_col}"
+        )
 
     df = df[[id_col, value_col]].dropna()
     df[value_col] = df[value_col].astype(float)
@@ -336,7 +375,12 @@ def process_file(
 
     for name, sub in groups:
         vals = sub[value_col].values
-        res = process_group(vals, max_components=max_components, group_name=name, outdir=os.path.dirname(out_path))
+        res = process_group(
+            vals,
+            max_components=max_components,
+            group_name=name,
+            outdir=os.path.dirname(out_path),
+        )
         out_row = {id_col: name}
         out_row.update(res)
         results.append(out_row)
@@ -351,10 +395,13 @@ def process_file(
 # -------------------------
 def main():
     p = argparse.ArgumentParser(
-        description="Fit binned lognormal per id and detect/filter majority mixture component"
+        description="Fit binned lognormal (mixture) per id"
     )
     p.add_argument(
-        "--input", "-i", required=True, help="Input CSV path (columns: id, polya_len)"
+        "--input",
+        "-i",
+        required=True,
+        help="Input CSV path (columns: id, polya_len)",
     )
     p.add_argument(
         "--output",
@@ -363,7 +410,9 @@ def main():
         help="Output CSV path (will contain id, mu, sigma, ...)",
     )
     p.add_argument("--id-col", default="sample_id", help="Name of id column")
-    p.add_argument("--value-col", default="polya_len", help="Name of length column")
+    p.add_argument(
+        "--value-col", default="polya_len", help="Name of length column"
+    )
     p.add_argument(
         "--max-components",
         type=int,

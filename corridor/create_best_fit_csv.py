@@ -1,9 +1,12 @@
-import pandas as pd
 import argparse
+
 import numpy as np
+import pandas as pd
 
 
-def create_best_fit_csv(df_all: pd.DataFrame, df_best: pd.DataFrame) -> pd.DataFrame:
+def create_best_fit_csv(
+    df_all: pd.DataFrame, df_best: pd.DataFrame
+) -> pd.DataFrame:
     """
     Create best fit CSV from input CSV (sample_id,mu1,sigma1,mu2,sigma2,...).
     """
@@ -22,22 +25,35 @@ def create_best_fit_csv(df_all: pd.DataFrame, df_best: pd.DataFrame) -> pd.DataF
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Create best fit CSV from input CSV (sample_id,mu1,sigma1,mu2,sigma2,...)."
+        description=(
+            "Create best fit CSV from input CSV ",
+            "(sample_id,mu1,sigma1,mu2,sigma2,...).",
+        ),
     )
     parser.add_argument(
         "--all",
         required=True,
-        help="Path to input CSV with columns: sample_id, mu1, sigma1, mu2, ...",
+        help=(
+            "Path to input CSV with columns: ",
+            "sample_id, mu1, sigma1, mu2, ...",
+        ),
     )
     parser.add_argument(
         "--best",
         required=True,
-        help="Path to input CSV with columns: sample_id, fit_idx. fit_idx should correspond to the suffix of the mu and sigma columns in the all CSV.",
+        help=(
+            "Path to input CSV with columns: ",
+            "sample_id, fit_idx. fit_idx should correspond to the ",
+            "suffix of the mu and sigma columns in the all CSV.",
+        ),
     )
     parser.add_argument(
         "--output",
         required=True,
-        help="Path to output CSV to write best fit csv with columns: id, mu, sigma.",
+        help=(
+            "Path to output CSV to write best fit csv with ",
+            "columns: id, mu, sigma.",
+        ),
     )
     args = parser.parse_args()
 
@@ -45,12 +61,16 @@ def main():
     df_all = pd.read_csv(args.all)
     required = {"sample_id", "mu1", "sigma1"}
     if not required.issubset(df_all.columns):
-        raise ValueError(f"Input CSV must contain columns: {', '.join(required)}")
+        raise ValueError(
+            f"Input CSV must contain columns: {', '.join(required)}"
+        )
 
     df_best = pd.read_csv(args.best)
     required = {"sample_id", "fit_idx"}
     if not required.issubset(df_best.columns):
-        raise ValueError(f"Input CSV must contain columns: {', '.join(required)}")
+        raise ValueError(
+            f"Input CSV must contain columns: {', '.join(required)}"
+        )
 
     out_df = create_best_fit_csv(df_all, df_best)
     out_df.to_csv(args.output, index=False)

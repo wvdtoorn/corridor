@@ -1,17 +1,19 @@
 #!/usr/bin/env python3
 """
-Standalone BAM parser for extracting polyA tail length estimates from Dorado BAM files.
+Standalone BAM parser for extracting polyA tail length estimates
+from Dorado BAM files.
 
-This script extracts the 'pt' (polyA tail) tags from Dorado BAM files and exports
-them to CSV format for further analysis with corridora.
+This script extracts the 'pt' (polyA tail) tags from Dorado BAM
+files and export them to CSV format for further analysis with corridora.
 """
+
+import warnings
+from pathlib import Path
+from typing import Optional
 
 import click
 import pandas as pd
 import pysam
-from pathlib import Path
-from typing import Optional
-import warnings
 
 warnings.filterwarnings("ignore")
 
@@ -45,7 +47,10 @@ def parse_dorado_bam(bam_file: str) -> pd.DataFrame:
                     valid_reads += 1
 
     click.echo(
-        f"Processed {total_reads:,} reads, found {valid_reads:,} with polyA estimates ({valid_reads / total_reads * 100:.2f}%)"
+        (
+            f"Processed {total_reads:,} reads, found {valid_reads:,} ",
+            f"with polyA estimates ({valid_reads / total_reads * 100:.2f}%)",
+        )
     )
 
     return pd.DataFrame(estimated_lengths)
@@ -60,11 +65,18 @@ def parse_dorado_bam(bam_file: str) -> pd.DataFrame:
     help="Output CSV file (default: based on input filename)",
 )
 @click.option(
-    "--sample-name", "-s", help="Sample name to add as a column (default: filename)"
+    "--sample-name",
+    "-s",
+    help="Sample name to add as a column (default: filename)",
 )
 @click.option("--quiet", "-q", is_flag=True, help="Suppress progress output")
 @click.version_option()
-def main(bam_file: str, output: Optional[str], sample_name: Optional[str], quiet: bool):
+def main(
+    bam_file: str,
+    output: Optional[str],
+    sample_name: Optional[str],
+    quiet: bool,
+):
     """
     Extract polyA tail length estimates from Dorado BAM files.
 
@@ -102,7 +114,10 @@ def main(bam_file: str, output: Optional[str], sample_name: Optional[str], quiet
         if len(df) == 0:
             click.echo("No polyA estimates found in BAM file")
             click.echo(
-                "   Make sure this is a Dorado BAM from basecalling with polyA estimation enabled"
+                (
+                    "   Make sure this is a Dorado BAM from basecalling ",
+                    "with polyA estimation enabled",
+                )
             )
             return
 
