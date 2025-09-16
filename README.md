@@ -51,6 +51,8 @@ sample3,1
 ...
 ```
 
+An example of such a CSV file for the included dataset is provided in `test/assets/best_fit_idx.csv`.
+
 Then, run the following command:
 
 ```bash
@@ -61,6 +63,17 @@ python corridor/create_best_fit_csv.py --all path/to/fit_binned_lognormal.csv --
 
 ```bash
 python corridor/predict.py -m corridor/models/rna004_130bps_sup@v5.1.0_v1.0.0.pkl -i path/to/best_fit.csv -o path/to/predictions.csv
+```
+
+The output CSV will have the following structure:
+
+```csv
+
+sample_id,predicted_length,ci_lo,ci_hi
+sample1,15,10,20
+sample2,20,15,25
+sample3,29,24,34
+...
 ```
 
 ## End-to-end test with real data
