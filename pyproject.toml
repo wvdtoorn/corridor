@@ -7,7 +7,7 @@ name = "corridor"
 requires-python = ">= 3.11"
 version = "0.1"
 authors = [
-    {name = "Wiep van der Toorn", email = "wt@biotx.ai"},
+    {name = "Wiep van der Toorn", email = "corridor@vandertoorn.org"},
 ]
 readme = {file = "README.md", content-type = "text/markdown"}
 dependencies = [
