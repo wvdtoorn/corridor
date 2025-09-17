@@ -24,7 +24,7 @@ cd corridor
 pip install .
 ```
 
-After that the repository is not need anymore. For a development
+After that the repository is not needed anymore. For a development
 setup do an _editable_ installation instead and keep the repository:
 
 ```bash
