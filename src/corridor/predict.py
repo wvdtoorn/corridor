@@ -209,10 +209,10 @@ def main():
     parser.add_argument(
         "--model",
         "-m",
-        required=True,
+        default=str(Path(__file__).parent / 'models' / 'rna004_130bps_sup@v5.1.0_v1.0.0.pkl'),
         help=(
-            "Path to pickled model artifact (dict or object or statsmodels ",
-            "result).",
+            "Path to pickled model artifact (dict or object or statsmodels "
+            "result)."
         ),
     )
     parser.add_argument(

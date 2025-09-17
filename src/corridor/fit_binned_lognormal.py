@@ -43,7 +43,7 @@ INPUT_DTYPES = {
     "method": str,
     "run": int,
     "method_run": str,
-    "sample_id": int,
+    "sample_id": str,
 }
 
 
