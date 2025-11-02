@@ -54,32 +54,22 @@ If your BAM file has multiple samples, you should update the `sample_id` column 
 fit_binned_lognormal -i path/to/dorado_polya.csv -o path/to/fit_binned_lognormal.csv
 ```
 
-This creates a figure per sample in the `path/to` directory as well as a CSV file with the results. You should check the figure(s) to determine the minimal reasonable fit, i.e. the left most plot that matches the majority of the data while ignoring low and high value noise. We currently do not support predictions per mode, for multi-modal polya tail length distributions.
+This creates a figure per sample in the `path/to` directory as well as a CSV file with the results. You should check the figure(s) to determine the minimal reasonable fit, i.e. the left most plot that matches the majority of the data while ignoring low and high value noise, and update the `fit_idx` column in the `selected_fit_idx.csv` accordingly if necessary.
 
-**3. Create best fit CSV**
+We currently do not support predictions per mode for multi-modal polya tail length distributions.
 
-Based on the results from the previous step, you should create a CSV file with the best fit for each sample:
-
-```csv
-sample_id,fit_idx
-sample1,1
-sample2,2
-sample3,1
-...
-```
-
-An example of such a CSV file for the included dataset is provided in `test/assets/best_fit_idx.csv`.
+An example of such a CSV file for the included dataset is provided in `test/assets/selected_fit_idx.csv`.
 
 Then, run the following command:
 
 ```bash
-create_best_fit_csv --all path/to/fit_binned_lognormal.csv --best path/to/best_fit_idx.csv --output path/to/best_fit.csv
+create_selected_fit_csv --all path/to/fit_binned_lognormal.csv --selected path/to/selected_fit_idx.csv --output path/to/selected_fit.csv
 ```
 
 **4. Predict true length with 95% CI**
 
 ```bash
-predict -i path/to/best_fit.csv -o path/to/predictions.csv
+predict -i path/to/selected_fit.csv -o path/to/predictions.csv
 ```
 
 The output CSV will have the following structure:

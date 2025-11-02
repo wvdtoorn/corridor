@@ -106,6 +106,45 @@ def neg_log_likelihood_from_counts(
     return -ll
 
 
+def histogram_match_goodness_of_fit(
+    values: np.ndarray,
+    counts: np.ndarray,
+    mu: float,
+    sigma: float,
+) -> Dict[str, float]:
+    """
+    Calculate goodness of fit metrics by matching histograms.
+    
+    Compares observed histogram (values and counts) to expected histogram
+    from a fitted lognormal distribution (with parameters mu and sigma).
+    Only matches bins that exist in the observed data.
+    
+    Args:
+        values: Array of unique integer values present in the data
+        counts: Array of counts for each value (same length as values)
+        mu: Mean parameter of fitted lognormal distribution
+        sigma: Standard deviation parameter of fitted lognormal distribution
+    
+    Returns:
+        weighted_rmse: Weighted RMSE (weighted by count magnitude)
+       
+    """
+    values = np.asarray(values, dtype=float)
+    counts = np.asarray(counts, dtype=float)
+    
+    pmf = binned_lognormal_pmf(values, mu, sigma)
+    pmf = pmf / np.sum(pmf)
+    
+    total_observed = float(np.sum(counts))
+    expected_counts = pmf * total_observed
+    expected_counts = np.maximum(expected_counts, 1e-10)
+    
+    weights = np.maximum(counts, 1e-10)
+    weighted_rmse = np.sqrt(np.sum(weights * (counts - expected_counts) ** 2) / np.sum(weights))
+   
+    return float(weighted_rmse)
+
+
 def fit_binned_lognormal_to_sample(data: np.ndarray) -> Dict[str, Any]:
     """
     Fit a binned lognormal to the 1D array `data` of integer positive values.
@@ -326,7 +365,7 @@ def process_group(
             sigma = mr.sigma_params[this_majority_idx]
             pdf = stats.lognorm.pdf(x, sigma, loc=0, scale=np.exp(mu))
             plt.plot(
-                x, pdf, "r-", linewidth=2, label=f"Mixture fit (k={i + 1})"
+                x, pdf, "r-", linewidth=2, label=f"Mixture fit (k={i + 2})"
             )
             plt.legend()
             plt.grid(True, alpha=0.3)
@@ -337,8 +376,13 @@ def process_group(
         fig_mixtures.savefig(fig_path)
         plt.close()
 
+    weighted_rmses = []
+    for mu, sigma in zip(mus, sigmas):
+        weighted_rmses.append(histogram_match_goodness_of_fit(vals_all, counts_all, mu, sigma))
+    selected_fit = np.argmin(weighted_rmses) + 1
     out = {
         "mixture_fig_path": fig_path,
+        "selected_fit": selected_fit,
     }
     for i in range(len(mus)):
         out[f"mu{i + 1}"] = mus[i]
@@ -373,6 +417,7 @@ def process_file(
     groups = df.groupby(id_col)
     logger.info("Processing %d groups...", groups.ngroups)
 
+    selected_fits = []
     for name, sub in groups:
         vals = sub[value_col].values
         res = process_group(
@@ -384,11 +429,15 @@ def process_file(
         out_row = {id_col: name}
         out_row.update(res)
         results.append(out_row)
+        selected_fits.append((name, out_row["selected_fit"]))
 
     out_df = pd.DataFrame(results)
     out_df.to_csv(out_path, index=False)
     logger.info("Wrote results for %d groups to %s", len(out_df), out_path)
 
+    selected_fits_df = pd.DataFrame(selected_fits, columns=['sample_id', "fit_idx"])
+    selected_fits_df.to_csv(os.path.join(os.path.dirname(out_path), "selected_fit_idx.csv"), index=False)
+    logger.info("Wrote selected fits to %s", os.path.join(os.path.dirname(out_path), "selected_fit_idx.csv"))
 
 # -------------------------
 # CLI

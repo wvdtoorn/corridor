@@ -4,11 +4,11 @@ import numpy as np
 import pandas as pd
 
 
-def create_best_fit_csv(
+def create_selected_fit_csv(
     df_all: pd.DataFrame, df_best: pd.DataFrame
 ) -> pd.DataFrame:
     """
-    Create best fit CSV from input CSV (sample_id,mu1,sigma1,mu2,sigma2,...).
+    Create selected fit CSV from input CSV (sample_id,mu1,sigma1,mu2,sigma2,...).
     """
     df_all = df_all.merge(df_best, on="sample_id", how="left")
     mu_columns = [c for c in df_all.columns if c.startswith("mu")]
@@ -26,12 +26,13 @@ def create_best_fit_csv(
 def main():
     parser = argparse.ArgumentParser(
         description=(
-            "Create best fit CSV from input CSV ",
+            "Create selected fit CSV from input CSV ",
             "(sample_id,mu1,sigma1,mu2,sigma2,...).",
         ),
     )
     parser.add_argument(
         "--all",
+        "-a",
         required=True,
         help=(
             "Path to input CSV with columns: ",
@@ -39,7 +40,8 @@ def main():
         ),
     )
     parser.add_argument(
-        "--best",
+        "--selected",
+        "-s",
         required=True,
         help=(
             "Path to input CSV with columns: ",
@@ -49,9 +51,10 @@ def main():
     )
     parser.add_argument(
         "--output",
+        "-o",
         required=True,
         help=(
-            "Path to output CSV to write best fit csv with ",
+            "Path to output CSV to write selected fit csv with ",
             "columns: id, mu, sigma.",
         ),
     )
@@ -65,16 +68,16 @@ def main():
             f"Input CSV must contain columns: {', '.join(required)}"
         )
 
-    df_best = pd.read_csv(args.best)
+    df_selected = pd.read_csv(args.selected)
     required = {"sample_id", "fit_idx"}
-    if not required.issubset(df_best.columns):
+    if not required.issubset(df_selected.columns):
         raise ValueError(
             f"Input CSV must contain columns: {', '.join(required)}"
         )
 
-    out_df = create_best_fit_csv(df_all, df_best)
+    out_df = create_selected_fit_csv(df_all, df_selected)
     out_df.to_csv(args.output, index=False)
-    print(f"Wrote best fit csv to {args.output}")
+    print(f"Wrote selected fit csv to {args.output}")
     print(out_df.head(20).to_string(index=False))
 
 
